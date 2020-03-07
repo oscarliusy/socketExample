@@ -15,7 +15,7 @@ var http = require('http');
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '3000');
+var port = normalizePort(process.env.PORT || '4000');
 app.set('port', port);
 
 /**
@@ -33,15 +33,62 @@ server.on('error', onError);
 server.on('listening', onListening);
 
 
+var msg = {
+  total:3,
+  unread:2,
+  list:[
+      {
+          id:1,
+          from:"user1",
+          msg:"I hanve a small donkey that never ride",
+          createAt:"1552517263000",
+          unRead:true
+      },
+      {
+          id:2,
+          from:"user2",
+          msg:"Alternatively you can serve the file socket.io.js",
+          createAt:"1532517263000",
+          unRead:false
+      },
+      {
+          id:3,
+          from:"user3",
+          msg:"Move code with side effects to componentDidMount",
+          createAt:"1522517263000",
+          unRead:true
+      },
+  ]
+}
+
+
 var io = require('socket.io')(server)
 io.on('connection', function(socket){
   console.log('a new user connected') //当有人访问时触发
   socket.on('disconnect', function(){ //刷新或退出时触发
     console.log('user disconnected');
   });
-  socket.on('chat message', function(msg){ //前端form输入文本时触发
-    io.emit('chat message', msg); //向前端所有访问者发送
+  socket.on('signIn', () => { //前端form输入文本时触发
+    io.emit('updateNotificationList', msg); //向前端所有访问者发送
   });
+  socket.on('markHasreadById',(id)=>{
+    msg.list.map(item=>{
+      if(item.id === id){
+        item.unRead = !item.unRead
+      }
+      return item
+    })
+    msg.unread -= 1
+    io.emit('updateNotificationList', msg)
+  })
+  socket.on('markAllHasread',()=>{
+    msg.list.map(item=>{
+      item.unRead = false
+      return item
+    })
+    msg.unread = 0
+    io.emit('updateNotificationList', msg)
+  })
 })
 
 /**
